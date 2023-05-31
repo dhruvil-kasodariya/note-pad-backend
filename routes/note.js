@@ -89,7 +89,7 @@ router.delete("/delete/:noteId", async (req, res) => {
 //get note by Id
 router.get("/getNote/:noteId", async (req, res) => {
   let noteId = req.params.noteId;
-  console.log(noteId);
+  
   try {
     const getNote = await Note.find({ _id: noteId });
 
@@ -144,14 +144,23 @@ router.put("/update/:noteId", async (req, res) => {
 
 router.patch("/update/title/:noteId", async (req, res) => {
   let noteId = req.params.noteId;
-  req.body.noteTitle = CryptoJS.AES.encrypt(
+  req.body.noteTitle &&
+  (req.body.noteTitle = CryptoJS.AES.encrypt(
     req.body.noteTitle,
     process.env.CRYPTIC_NOTE_TITLE_KEY
-  ).toString();
+  ).toString())
+  req.body.noteContent &&(req.body.noteContent = CryptoJS.AES.encrypt(
+    req.body.noteContent,
+    process.env.CRYPTIC_NOTE_CONTENT_KEY
+  ).toString())
+
   try {
-    const updatedNote = await Note.findByIdAndUpdate(noteId, {
+    req.body.noteTitle && ( updatedNote = await Note.findByIdAndUpdate(noteId, {
       noteTitle: req.body.noteTitle,
-    });
+    },{new:true}));
+    req.body.noteContent && (updatedNote =await Note.findByIdAndUpdate(noteId,{
+      noteContent:req.body.noteContent
+    },{new:true}))
     if (updatedNote) {
       updatedNote.noteTitle = CryptoJS.AES.decrypt(
         updatedNote.noteTitle,
