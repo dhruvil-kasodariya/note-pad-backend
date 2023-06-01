@@ -1,9 +1,10 @@
 const router = require("express").Router();
 const Note = require("../models/Note");
 const CryptoJS = require("crypto-js");
+const verifyToken = require("../middleware/verifyToken");
 
 //add note
-router.post("/addNote", async (req, res) => {
+router.post("/addNote", verifyToken, async (req, res) => {
   let encryptNoteTitle = CryptoJS.AES.encrypt(
     req.body.noteTitle,
     process.env.CRYPTIC_NOTE_TITLE_KEY
@@ -40,7 +41,7 @@ router.post("/addNote", async (req, res) => {
 });
 
 //get notes by userId
-router.get("/user/getNotes/:userId", async (req, res) => {
+router.get("/user/getNotes/:userId", verifyToken, async (req, res) => {
   let userId = req.params.userId;
   try {
     const Notes = await Note.find({ "user.userId": userId });
@@ -65,7 +66,7 @@ router.get("/user/getNotes/:userId", async (req, res) => {
 });
 
 //delete all notes by userId
-router.delete("/user/delete/:userId", async (req, res) => {
+router.delete("/user/delete/:userId", verifyToken, async (req, res) => {
   let userId = req.params.userId;
   try {
     await Note.deleteMany({ "user.userId": userId });
@@ -76,7 +77,7 @@ router.delete("/user/delete/:userId", async (req, res) => {
 });
 
 //delete note by id
-router.delete("/delete/:noteId", async (req, res) => {
+router.delete("/delete/:noteId", verifyToken, async (req, res) => {
   let noteId = req.params.noteId;
   try {
     await Note.findByIdAndDelete({ _id: noteId });
@@ -87,9 +88,9 @@ router.delete("/delete/:noteId", async (req, res) => {
 });
 
 //get note by Id
-router.get("/getNote/:noteId", async (req, res) => {
+router.get("/getNote/:noteId", verifyToken, async (req, res) => {
   let noteId = req.params.noteId;
-  
+
   try {
     const getNote = await Note.find({ _id: noteId });
 
@@ -110,7 +111,7 @@ router.get("/getNote/:noteId", async (req, res) => {
 });
 
 //update note by id
-router.put("/update/:noteId", async (req, res) => {
+router.put("/update/:noteId", verifyToken, async (req, res) => {
   let noteId = req.params.noteId;
   req.body.noteTitle = CryptoJS.AES.encrypt(
     req.body.noteTitle,
@@ -142,25 +143,36 @@ router.put("/update/:noteId", async (req, res) => {
   }
 });
 
-router.patch("/update/title/:noteId", async (req, res) => {
+router.patch("/update/title/:noteId", verifyToken, async (req, res) => {
   let noteId = req.params.noteId;
   req.body.noteTitle &&
-  (req.body.noteTitle = CryptoJS.AES.encrypt(
-    req.body.noteTitle,
-    process.env.CRYPTIC_NOTE_TITLE_KEY
-  ).toString())
-  req.body.noteContent &&(req.body.noteContent = CryptoJS.AES.encrypt(
-    req.body.noteContent,
-    process.env.CRYPTIC_NOTE_CONTENT_KEY
-  ).toString())
+    (req.body.noteTitle = CryptoJS.AES.encrypt(
+      req.body.noteTitle,
+      process.env.CRYPTIC_NOTE_TITLE_KEY
+    ).toString());
+  req.body.noteContent &&
+    (req.body.noteContent = CryptoJS.AES.encrypt(
+      req.body.noteContent,
+      process.env.CRYPTIC_NOTE_CONTENT_KEY
+    ).toString());
 
   try {
-    req.body.noteTitle && ( updatedNote = await Note.findByIdAndUpdate(noteId, {
-      noteTitle: req.body.noteTitle,
-    },{new:true}));
-    req.body.noteContent && (updatedNote =await Note.findByIdAndUpdate(noteId,{
-      noteContent:req.body.noteContent
-    },{new:true}))
+    req.body.noteTitle &&
+      (updatedNote = await Note.findByIdAndUpdate(
+        noteId,
+        {
+          noteTitle: req.body.noteTitle,
+        },
+        { new: true }
+      ));
+    req.body.noteContent &&
+      (updatedNote = await Note.findByIdAndUpdate(
+        noteId,
+        {
+          noteContent: req.body.noteContent,
+        },
+        { new: true }
+      ));
     if (updatedNote) {
       updatedNote.noteTitle = CryptoJS.AES.decrypt(
         updatedNote.noteTitle,
