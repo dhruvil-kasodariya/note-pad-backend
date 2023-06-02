@@ -43,9 +43,11 @@ router.post("/login", async (req, res) => {
         user.password,
         process.env.CRYPTIC_PASSWORD_KEY
       ).toString(CryptoJS.enc.Utf8);
+      if (decryptPassword !== req.body.password) {
+        res.status(401).send({ messege: "Wrong Password" });
+        return;
+      }
 
-      decryptPassword !== req.body.password &&
-        res.status(401).send({ messege: "Wrong Password" }) 
       const id = user._id.toString();
 
       const accessToken = jwt.sign(
@@ -58,7 +60,7 @@ router.post("/login", async (req, res) => {
       const { password, ...others } = user._doc;
       res.status(200).json({ ...others, accessToken });
     }
-    return res;
+    return;
   } catch (err) {
     res.status(500).json(err);
   }
